@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin id="elastos-trinity-plugins-fingerprint" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+  <name>Fingerprint</name>
+
+  <js-module src="www/Fingerprint.js" name="Fingerprint">
+    <clobbers target="fingerprintManager"/>
+  </js-module>
+
+  <!-- ios -->
+  <platform name="ios">
+    <!--<dependency id="cordova-plugin-add-swift-support" version="^2.0.2"/>
+    <config-file target="config.xml" parent="/*">
+      <feature name="Fingerprint">
+        <param name="ios-package" value="Fingerprint"/>
+      </feature>
+    </config-file>
+    <header-file src="src/ios/Bridging-Header.h"/>
+    <source-file src="src/ios/Fingerprint.swift"/>-->
+
+    <!-- Usage description of Face ID for iOS 11+ -->
+    <preference name="FACEID_USAGE_DESCRIPTION" default=" "/>
+    <config-file target="*-Info.plist" parent="NSFaceIDUsageDescription">
+      <string>$FACEID_USAGE_DESCRIPTION</string>
+    </config-file>
+  </platform>
+
+  <!-- android -->
+  <platform name="android">
+    <config-file target="res/xml/config.xml" parent="/*">
+      <feature name="Fingerprint">
+        <param name="android-package" value="org.elastos.trinity.plugins.fingerprint.Fingerprint"/>
+      </feature>
+    </config-file>
+    
+    <config-file target="AndroidManifest.xml" parent="/*">
+	  <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+      <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+    </config-file>
+
+    <config-file target="AndroidManifest.xml" parent="/manifest/application">
+      <activity
+          android:name="org.elastos.trinity.plugins.fingerprint.AuthenticateActivity"
+          android:theme="@style/TransparentTheme"
+          android:exported="true" />
+    </config-file>
+    
+    <framework src="src/android/build.gradle" custom="true" type="gradleReference"/>
+    <resource-file src="src/android/res/biometric_activity.xml" target="res/layout/biometric_activity.xml" />
+    <resource-file src="src/android/res/styles.xml" target="res/values/biometric-styles.xml" />
+    <source-file src="src/android/AuthenticateActivity.java" target-dir="src/org/elastos/trinity/plugins/fingerprint"/>
+    <source-file src="src/android/Fingerprint.java" target-dir="src/org/elastos/trinity/plugins/fingerprint"/>
+    <source-file src="src/android/FingerPrintAuthHelper.java" target-dir="src/org/elastos/trinity/plugins/fingerprint"/>
+    <source-file src="src/android/PluginError.java" target-dir="src/org/elastos/trinity/plugins/fingerprint"/>
+  </platform>
+
+  <engines>
+    <engine name="cordova-android" version=">=7.0.0" />
+  </engines>
+
+</plugin>
