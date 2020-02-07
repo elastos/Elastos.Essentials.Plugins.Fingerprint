@@ -10,3 +10,4 @@ package-lock.json
 src/android/.project
 src/android/.gradle
 src/android/.settings
+Fingerprint.js
