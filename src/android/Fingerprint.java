@@ -54,7 +54,7 @@ public class Fingerprint extends TrinityPlugin {
     private void executeIsAvailable() {
         PluginError error = canAuthenticate();
         if (error != null) {
-            sendError(error);
+            sendSuccess("none");
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){
             sendSuccess("biometric");
         } else {

@@ -40,7 +40,8 @@ declare namespace FingerprintPlugin {
     enum BiometricType {
         BIOMETRIC_TYPE_FINGERPRINT= "finger",
         BIOMETRIC_TYPE_FACE= "face",
-        BIOMETRIC_TYPE_COMMON= "biometric"
+        BIOMETRIC_TYPE_COMMON= "biometric",
+        BIOMETRIC_TYPE_NONE= "none"
     }
 
     /**

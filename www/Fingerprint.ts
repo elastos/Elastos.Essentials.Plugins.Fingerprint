@@ -10,7 +10,7 @@ class FingerprintManagerImpl implements FingerprintPlugin.FingerprintManager {
       (err)=>{
         reject(err);
       },
-      "Fingerprint", "authenticate", [passwordKey, password]);
+      "Fingerprint", "authenticateAndSavePassword", [passwordKey, password]);
     });
   }  
   
