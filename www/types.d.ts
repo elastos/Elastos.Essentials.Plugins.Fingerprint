@@ -33,11 +33,11 @@
 * <br>
 * declare let fingerprintManager: FingerprintPlugin.FingerprintManager;
 */
-declare namespace FingerprintPlugin {    
+declare namespace FingerprintPlugin {
     /**
      * Type of biometric authentication method available on the device.
      */
-    enum BiometricType {
+    const enum BiometricType {
         BIOMETRIC_TYPE_FINGERPRINT= "finger",
         BIOMETRIC_TYPE_FACE= "face",
         BIOMETRIC_TYPE_COMMON= "biometric",
@@ -47,7 +47,7 @@ declare namespace FingerprintPlugin {
     /**
      * Error codes returns by promises rejections in case of error.
      */
-    enum PluginError {
+    const enum PluginError {
         BIOMETRIC_UNKNOWN_ERROR= -100,
         BIOMETRIC_UNAVAILABLE= -101,
         BIOMETRIC_AUTHENTICATION_FAILED= -102,
@@ -66,7 +66,7 @@ declare namespace FingerprintPlugin {
     interface FingerprintManager {
         /**
          * Tells if a biometric authentication method is available on the device.
-         * 
+         *
          * @returns The available biometric identification type.
          */
         isAvailable(): Promise<BiometricType>;
@@ -79,7 +79,7 @@ declare namespace FingerprintPlugin {
 
         /**
          * Authenticates user, then securely stores the given password on the device.
-         * 
+         *
          * @param passwordKey User-defined string used to allow multiple passwords to be stored within the same application.
          * @param password Clear text password that will be encrypted with fingerprint-protected encoding keys. The stored password can later be retrieve by calling authenticateAndGetPassword().
          */
@@ -87,9 +87,9 @@ declare namespace FingerprintPlugin {
 
         /**
          * Authenticates user, then returns a previously saved clear text password.
-         * 
+         *
          * @param passwordKey User-defined string used to allow multiple passwords to be stored within the same application.
-         * 
+         *
          * @returns Clear text password, if any.
          */
         authenticateAndGetPassword(passwordKey: string): Promise<string>;
