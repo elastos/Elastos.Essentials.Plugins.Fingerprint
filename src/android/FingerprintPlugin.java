@@ -20,7 +20,7 @@ import org.json.JSONObject;
 
 import static android.content.Context.FINGERPRINT_SERVICE;
 
-public class Fingerprint extends TrinityPlugin {
+public class FingerprintPlugin extends TrinityPlugin {
     private static final String TAG = "FingerprintPlugin";
     private CallbackContext mCallbackContext = null;
 

@@ -10,7 +10,7 @@ class FingerprintManagerImpl implements FingerprintPlugin.FingerprintManager {
       (err)=>{
         reject(err);
       },
-      "Fingerprint", "authenticateAndSavePassword", [passwordKey, password]);
+      "FingerprintPlugin", "authenticateAndSavePassword", [passwordKey, password]);
     });
   }  
   
@@ -22,7 +22,7 @@ class FingerprintManagerImpl implements FingerprintPlugin.FingerprintManager {
       (err)=>{
         reject(err);
       },
-      "Fingerprint", "authenticateAndGetPassword", [passwordKey]);
+      "FingerprintPlugin", "authenticateAndGetPassword", [passwordKey]);
     });
   }
 
@@ -34,7 +34,7 @@ class FingerprintManagerImpl implements FingerprintPlugin.FingerprintManager {
       (err)=>{
         reject(err);
       },
-      "Fingerprint", "authenticate", []);
+      "FingerprintPlugin", "authenticate", []);
     });
   }
 
@@ -46,7 +46,7 @@ class FingerprintManagerImpl implements FingerprintPlugin.FingerprintManager {
       (err)=>{
         reject(err);
       },
-      "Fingerprint", "isBiometricAuthenticationMethodAvailable", []);
+      "FingerprintPlugin", "isBiometricAuthenticationMethodAvailable", []);
     });
   }
 }
