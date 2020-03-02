@@ -26,6 +26,12 @@
 
   <!-- android -->
   <platform name="android">
+    <config-file target="res/xml/config.xml" parent="/*">
+      <feature name="FingerprintPlugin">
+        <param name="android-package" value="org.elastos.trinity.plugins.fingerprint.FingerprintPlugin"/>
+      </feature>
+    </config-file>
+
     <config-file target="AndroidManifest.xml" parent="/*">
 	    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
       <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
