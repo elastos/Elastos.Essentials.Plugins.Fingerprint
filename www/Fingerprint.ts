@@ -38,15 +38,15 @@ class FingerprintManagerImpl implements FingerprintPlugin.FingerprintManager {
     });
   }
 
-  isAvailable(): Promise<FingerprintPlugin.BiometricType> {
+  isBiometricAuthenticationMethodAvailable(): Promise<boolean> {
     return new Promise((resolve, reject)=>{
-      exec((biometricType: FingerprintPlugin.BiometricType)=>{
-        resolve(biometricType);
+      exec((isAvailable: string)=>{
+        resolve((isAvailable=="true"?true:false));
       },
       (err)=>{
         reject(err);
       },
-      "Fingerprint", "isAvailable", []);
+      "Fingerprint", "isBiometricAuthenticationMethodAvailable", []);
     });
   }
 }

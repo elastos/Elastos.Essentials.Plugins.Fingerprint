@@ -21,7 +21,7 @@
  */
 
 /**
-* This plugin provides biometric authentication features (android fingerprint, ios touch id, ios face id).
+* This plugin provides biometric authentication features (android fingerprint, android face recognition, ios touch id, ios face id).
 * It allows dApps to simply authenticate users using their fingerprint, but it also provides a way to encrypt and
 * decrypt (one or more) passwords.
 *
@@ -34,16 +34,6 @@
 * declare let fingerprintManager: FingerprintPlugin.FingerprintManager;
 */
 declare namespace FingerprintPlugin {
-    /**
-     * Type of biometric authentication method available on the device.
-     */
-    const enum BiometricType {
-        BIOMETRIC_TYPE_FINGERPRINT= "finger",
-        BIOMETRIC_TYPE_FACE= "face",
-        BIOMETRIC_TYPE_COMMON= "biometric",
-        BIOMETRIC_TYPE_NONE= "none"
-    }
-
     /**
      * Error codes returns by promises rejections in case of error.
      */
@@ -65,14 +55,14 @@ declare namespace FingerprintPlugin {
 
     interface FingerprintManager {
         /**
-         * Tells if a biometric authentication method is available on the device.
+         * Tells if a biometric authentication (one or many) is available and enabled on the device.
          *
-         * @returns The available biometric identification type.
+         * @returns True if a biometric authentication method is available, false otherwise.
          */
-        isAvailable(): Promise<BiometricType>;
+        isBiometricAuthenticationMethodAvailable(): Promise<boolean>;
 
         /**
-         * Simple authentication. If the user is able to authenticaiton using his fingerprint or face,
+         * Simple authentication. If the user is able to authenticate using a biometric sensor,
          * the promise is resolved. Otherwise, the promise is rejected.
          */
         authenticate(): Promise<void>;
@@ -81,7 +71,7 @@ declare namespace FingerprintPlugin {
          * Authenticates user, then securely stores the given password on the device.
          *
          * @param passwordKey User-defined string used to allow multiple passwords to be stored within the same application.
-         * @param password Clear text password that will be encrypted with fingerprint-protected encoding keys. The stored password can later be retrieve by calling authenticateAndGetPassword().
+         * @param password Clear text password that will be encrypted with biometric-protected encoding keys. The stored password can later be retrieve by calling authenticateAndGetPassword().
          */
         authenticateAndSavePassword(passwordKey: string, password: string): Promise<void>;
 

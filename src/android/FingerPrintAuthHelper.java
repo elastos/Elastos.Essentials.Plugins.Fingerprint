@@ -2,6 +2,7 @@ package org.elastos.trinity.plugins.fingerprint;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
@@ -12,10 +13,14 @@ import android.os.Build;
 import android.os.CancellationSignal;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.ActivityCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
+
 import android.util.Log;
 
 import java.io.ByteArrayInputStream;
@@ -30,6 +35,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
+import java.util.concurrent.Executor;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -52,7 +58,7 @@ public class FingerPrintAuthHelper {
     private static final String KEYSTORE_APP_ALIAS = "Trinity";
     private static final String TAG = "FingerPrintAuthHelper";
 
-    private final Context context;
+    private final Activity activity;
     private final String dAppID; // Package id of the Trinity DApp calling us
     private KeyStore keyStore;
     private AuthenticateActivityInfoHolder activityInfoHolder;
@@ -80,8 +86,8 @@ public class FingerPrintAuthHelper {
         void onSuccess(String password);
     }
 
-    FingerPrintAuthHelper(Context context, String dAppID) {
-        this.context = context;
+    FingerPrintAuthHelper(Activity activity, String dAppID) {
+        this.activity = activity;
         this.dAppID = dAppID;
     }
 
@@ -96,8 +102,8 @@ public class FingerPrintAuthHelper {
             return false;
         }
 
-        KeyguardManager keyguardManager = (KeyguardManager) context.getSystemService(KEYGUARD_SERVICE);
-        FingerprintManager fingerprintManager = (FingerprintManager) context.getSystemService(FINGERPRINT_SERVICE);
+        KeyguardManager keyguardManager = (KeyguardManager) activity.getSystemService(KEYGUARD_SERVICE);
+        FingerprintManager fingerprintManager = (FingerprintManager) activity.getSystemService(FINGERPRINT_SERVICE);
 
         if (!keyguardManager.isKeyguardSecure()) {
             setError("User hasn't enabled Lock Screen");
@@ -222,12 +228,12 @@ public class FingerPrintAuthHelper {
     }
 
     private SharedPreferences getSharedPreferences() {
-        return context.getSharedPreferences(FINGER_PRINT_HELPER+"_"+dAppID, 0);
+        return activity.getSharedPreferences(FINGER_PRINT_HELPER+"_"+dAppID, 0);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     private boolean hasPermission() {
-        return ActivityCompat.checkSelfPermission(context, Manifest.permission.USE_FINGERPRINT) == PackageManager.PERMISSION_GRANTED;
+        return ActivityCompat.checkSelfPermission(activity, Manifest.permission.USE_FINGERPRINT) == PackageManager.PERMISSION_GRANTED;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -241,8 +247,37 @@ public class FingerPrintAuthHelper {
                 else {
                     activityInfoHolder.cipher = cipher;
 
-                    Intent intent = new Intent(context.getApplicationContext(), AuthenticateActivity.class);
-                    context.startActivity(intent);
+                    Executor executor = ContextCompat.getMainExecutor(activity);
+                    BiometricPrompt biometricPrompt = new BiometricPrompt((FragmentActivity) activity,
+                            executor, new BiometricPrompt.AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                            super.onAuthenticationError(errorCode, errString);
+
+                            activityInfoHolder.listener.onAuthenticationError(errorCode, errString);
+                        }
+
+                        @Override
+                        public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                            super.onAuthenticationSucceeded(result);
+                            activityInfoHolder.listener.onAuthenticationSucceeded(result);
+                        }
+
+                        @Override
+                        public void onAuthenticationFailed() {
+                            super.onAuthenticationFailed();
+                            activityInfoHolder.listener.onAuthenticationFailed();
+                        }
+                    });
+
+                    BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                            .setTitle("Authentication required")
+                            .setSubtitle("Please use your biometric authentication")
+                            .setNegativeButtonText("Cancel")
+                            .setConfirmationRequired(false)
+                            .build();
+
+                    biometricPrompt.authenticate(promptInfo, new BiometricPrompt.CryptoObject(cipher));
                 }
             } else {
                 activityInfoHolder.listener.getCallback().onFailure("User hasn't granted permission to use Fingerprint");
@@ -406,8 +441,7 @@ public class FingerPrintAuthHelper {
          *
          * @param result An object containing authentication-related data
          */
-        public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
-        }
+        public abstract void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result);
 
         /**
          * Called when a fingerprint is valid but not recognized.
@@ -434,7 +468,7 @@ public class FingerPrintAuthHelper {
             this.password = password;
         }
 
-        public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+        public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
             Cipher cipher = result.getCryptoObject().getCipher();
             try {
                 if (encryptAndSavePassword(cipher, passwordKey, password)) {
@@ -471,7 +505,7 @@ public class FingerPrintAuthHelper {
             this.passwordKey = passwordKey;
         }
 
-        public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+        public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
             Cipher cipher = result.getCryptoObject().getCipher();
             try {
                 String encryptedPassword = getSavedEncryptedPassword(passwordKey);
@@ -510,7 +544,7 @@ public class FingerPrintAuthHelper {
             this.callback = callback;
         }
 
-        public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
+        public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
             callback.onSuccess();
         }
 

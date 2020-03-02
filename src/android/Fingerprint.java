@@ -6,6 +6,9 @@ import android.hardware.fingerprint.FingerprintManager;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.util.Log;
+
+import androidx.biometric.BiometricManager;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaWebView;
@@ -33,8 +36,8 @@ public class Fingerprint extends TrinityPlugin {
         Log.v(TAG, "Fingerprint action: " + action);
 
         switch (action) {
-            case "isAvailable":
-                executeIsAvailable();
+            case "isBiometricAuthenticationMethodAvailable":
+                executeIsBiometricAuthenticationMethodAvailable();
                 return true;
             case "authenticateAndSavePassword":
                 Intent i = new Intent();
@@ -51,20 +54,18 @@ public class Fingerprint extends TrinityPlugin {
         }
     }
 
-    private void executeIsAvailable() {
-        PluginError error = canAuthenticate();
+    private void executeIsBiometricAuthenticationMethodAvailable() {
+        PluginError error = checkCanAuthenticate();
         if (error != null) {
-            sendSuccess("none");
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){
-            sendSuccess("biometric");
+            sendSuccess("false");
         } else {
-            sendSuccess("finger");
+            sendSuccess("true");
         }
     }
 
     @TargetApi(Build.VERSION_CODES.M)
     private void executeAuthenticateAndSavePassword(JSONArray args) throws JSONException {
-        PluginError error = canAuthenticate();
+        PluginError error = checkCanAuthenticate();
         if (error != null) {
             sendError(error);
             return;
@@ -88,7 +89,7 @@ public class Fingerprint extends TrinityPlugin {
         });
 
         cordova.getActivity().runOnUiThread(() -> {
-            activeAuthHelper = new FingerPrintAuthHelper(cordova.getContext(), getActiveDAppID());
+            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), getActiveDAppID());
             activeAuthHelper.init();
             activeAuthHelper.authenticateAndSavePassword(passwordKey, password, cancellationSignal, new FingerPrintAuthHelper.SimpleAuthenticationCallback() {
                 @Override
@@ -114,7 +115,7 @@ public class Fingerprint extends TrinityPlugin {
 
     @TargetApi(Build.VERSION_CODES.M)
     private void executeAuthenticateAndGetPassword(JSONArray args) throws JSONException {
-        PluginError error = canAuthenticate();
+        PluginError error = checkCanAuthenticate();
         if (error != null) {
             sendError(error);
             return;
@@ -129,7 +130,7 @@ public class Fingerprint extends TrinityPlugin {
         }
 
         cordova.getActivity().runOnUiThread(() -> {
-            activeAuthHelper = new FingerPrintAuthHelper(cordova.getContext(), getActiveDAppID());
+            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), getActiveDAppID());
             activeAuthHelper.init();
             activeAuthHelper.authenticateAndGetPassword(passwordKey, new CancellationSignal(), new FingerPrintAuthHelper.GetPasswordAuthenticationCallback() {
                 @Override
@@ -156,13 +157,13 @@ public class Fingerprint extends TrinityPlugin {
 
     @TargetApi(Build.VERSION_CODES.M)
     private void executeAuthenticate(JSONArray args) {
-        PluginError error = canAuthenticate();
+        PluginError error = checkCanAuthenticate();
         if (error != null) {
             sendError(error);
             return;
         }
         cordova.getActivity().runOnUiThread(() -> {
-            activeAuthHelper = new FingerPrintAuthHelper(cordova.getContext(), getActiveDAppID());
+            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), getActiveDAppID());
             activeAuthHelper.init();
             activeAuthHelper.authenticate(new CancellationSignal(), new FingerPrintAuthHelper.SimpleAuthenticationCallback() {
                @Override
@@ -186,26 +187,24 @@ public class Fingerprint extends TrinityPlugin {
         this.mCallbackContext.sendPluginResult(pluginResult);
     }
 
-    private PluginError canAuthenticate() {
-        // TODO: re-enable code for API 29+ after we increase our target API version.
-        /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return cordova.getContext().getSystemService(android.hardware.biometrics.BiometricManager.class).canAuthenticate(mBiometricManager);
-        } else {*/
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return PluginError.BIOMETRIC_HARDWARE_NOT_SUPPORTED;
+    private PluginError checkCanAuthenticate() {
+        BiometricManager biometricManager = BiometricManager.from(cordova.getContext().getApplicationContext());
+        switch (biometricManager.canAuthenticate()) {
+            case BiometricManager.BIOMETRIC_SUCCESS:
+                Log.d(TAG, "App can authenticate using biometrics.");
+                return null;
+            case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
+                Log.e(TAG, "No biometric features available on this device.");
+                return PluginError.BIOMETRIC_HARDWARE_NOT_SUPPORTED;
+            case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
+                Log.e(TAG, "Biometric features are currently unavailable.");
+                return PluginError.BIOMETRIC_HARDWARE_NOT_SUPPORTED;
+            case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
+                Log.e(TAG, "The user hasn't associated any biometric credentials with their account.");
+                return PluginError.BIOMETRIC_NOT_ENROLLED;
+            default:
+                return PluginError.BIOMETRIC_HARDWARE_NOT_SUPPORTED;
         }
-
-        FingerprintManager fingerprintManager = fingerprintManager = (FingerprintManager) cordova.getContext().getSystemService(FINGERPRINT_SERVICE);
-        if (fingerprintManager == null)
-            return PluginError.BIOMETRIC_HARDWARE_NOT_SUPPORTED;
-        else if (!fingerprintManager.isHardwareDetected()) {
-            return PluginError.BIOMETRIC_HARDWARE_NOT_SUPPORTED;
-        } else if (!fingerprintManager.hasEnrolledFingerprints()) {
-            return PluginError.BIOMETRIC_NOT_ENROLLED;
-        }
-        //}
-
-        return null;
     }
 
     private void sendError(int code, String message) {
