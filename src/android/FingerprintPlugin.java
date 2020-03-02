@@ -216,7 +216,7 @@ public class FingerprintPlugin extends TrinityPlugin {
             PluginResult result = new PluginResult(PluginResult.Status.ERROR, resultJson);
             result.setKeepCallback(true);
             cordova.getActivity().runOnUiThread(() -> {
-                    Fingerprint.this.mCallbackContext.sendPluginResult(result);
+                    FingerprintPlugin.this.mCallbackContext.sendPluginResult(result);
             });
         } catch (JSONException e) {
             Log.e(TAG, e.getMessage(), e);
