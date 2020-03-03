@@ -115,15 +115,11 @@ public class FingerPrintAuthHelper {
             return false;
         }
 
-        if (!fingerprintManager.hasEnrolledFingerprints()) {
-            setError("User hasn't registered any fingerprints");
-            return false;
-        }
-
         if (!initKeyStore()) {
             return false;
         }
-        return false;
+        
+        return true;
     }
 
     AuthenticateActivityInfoHolder getActivityInfoHolder() {
