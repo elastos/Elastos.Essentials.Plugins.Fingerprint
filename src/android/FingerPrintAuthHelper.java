@@ -86,7 +86,7 @@ public class FingerPrintAuthHelper {
         void onSuccess(String password);
     }
 
-    FingerPrintAuthHelper(Activity activity, String dAppID) {
+    public FingerPrintAuthHelper(Activity activity, String dAppID) {
         this.activity = activity;
         this.dAppID = dAppID;
     }
@@ -284,7 +284,7 @@ public class FingerPrintAuthHelper {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
-    void authenticateAndSavePassword(@NonNull String passwordKey, @NonNull String password, CancellationSignal cancellationSignal, SimpleAuthenticationCallback callback) {
+    public void authenticateAndSavePassword(@NonNull String passwordKey, @NonNull String password, CancellationSignal cancellationSignal, SimpleAuthenticationCallback callback) {
         activityInfoHolder = new AuthenticateActivityInfoHolder();
         activityInfoHolder.passwordKey = passwordKey;
         activityInfoHolder.password = password;
@@ -295,7 +295,7 @@ public class FingerPrintAuthHelper {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
-    void authenticateAndGetPassword(@NonNull String passwordKey, CancellationSignal cancellationSignal, GetPasswordAuthenticationCallback callback) {
+    public void authenticateAndGetPassword(@NonNull String passwordKey, CancellationSignal cancellationSignal, GetPasswordAuthenticationCallback callback) {
         activityInfoHolder = new AuthenticateActivityInfoHolder();
         activityInfoHolder.passwordKey = passwordKey;
         activityInfoHolder.cancellationSignal = cancellationSignal;
@@ -305,7 +305,7 @@ public class FingerPrintAuthHelper {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
-    void authenticate(CancellationSignal cancellationSignal, SimpleAuthenticationCallback callback) {
+    public void authenticate(CancellationSignal cancellationSignal, SimpleAuthenticationCallback callback) {
         activityInfoHolder = new AuthenticateActivityInfoHolder();
         activityInfoHolder.cancellationSignal = cancellationSignal;
         activityInfoHolder.listener = new FingerPrintSimpleAuthenticationListener(callback);
