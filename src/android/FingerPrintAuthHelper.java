@@ -57,8 +57,11 @@ public class FingerPrintAuthHelper {
     private static final String LAST_USED_IV_SHARED_PREF_KEY = "LAST_USED_IV_SHARED_PREFS_KEY";
     private static final String KEYSTORE_APP_ALIAS = "Trinity";
     private static final String TAG = "FingerPrintAuthHelper";
+    private static final String DID_APPLICATION_APP_ID = "org.elastos.trinity.dapp.did";
+    private static final String DID_SESSION_APPLICATION_APP_ID = "org.elastos.trinity.dapp.didsession";
 
     private final Activity activity;
+    private final String did; // Signed in DID string
     private final String dAppID; // Package id of the Trinity DApp calling us
     private KeyStore keyStore;
     private AuthenticateActivityInfoHolder activityInfoHolder;
@@ -86,9 +89,15 @@ public class FingerPrintAuthHelper {
         void onSuccess(String password);
     }
 
-    public FingerPrintAuthHelper(Activity activity, String dAppID) {
+    public FingerPrintAuthHelper(Activity activity, String did, String dAppID) {
         this.activity = activity;
-        this.dAppID = dAppID;
+        this.did = did;
+
+        // Special case for did session and did apps: the did session app uses the did app package id, so they can share their data
+        if (dAppID.equals(DID_SESSION_APPLICATION_APP_ID))
+            this.dAppID = DID_APPLICATION_APP_ID;
+        else
+            this.dAppID = dAppID;
     }
 
     public String getLastError() {
@@ -141,7 +150,10 @@ public class FingerPrintAuthHelper {
             cipher.init(mode, key);
         } else {
             byte[] lastIv = getLastIv(passwordKey);
-            cipher.init(mode, key, new IvParameterSpec(lastIv));
+            if (lastIv != null)
+                cipher.init(mode, key, new IvParameterSpec(lastIv));
+            else
+                return null;
         }
         return cipher;
     }
@@ -178,7 +190,7 @@ public class FingerPrintAuthHelper {
     }
 
     private String getPasswordSharedPrefsKey(String passwordKey) {
-        return ENCRYPTED_PASS_SHARED_PREF_KEY + dAppID + passwordKey;
+        return ENCRYPTED_PASS_SHARED_PREF_KEY + passwordKey;
     }
 
     private String getSavedEncryptedPassword(String passwordKey) {
@@ -201,7 +213,7 @@ public class FingerPrintAuthHelper {
     }
 
     private String getIvSharedPrefsKey(String passwordKey) {
-        return LAST_USED_IV_SHARED_PREF_KEY + dAppID + passwordKey;
+        return LAST_USED_IV_SHARED_PREF_KEY + passwordKey;
     }
 
     private byte[] getLastIv(String passwordKey) {
@@ -224,7 +236,7 @@ public class FingerPrintAuthHelper {
     }
 
     private SharedPreferences getSharedPreferences() {
-        return activity.getSharedPreferences(FINGER_PRINT_HELPER+"_"+dAppID, 0);
+        return activity.getSharedPreferences(FINGER_PRINT_HELPER+"_"+did+"_"+dAppID, 0);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
