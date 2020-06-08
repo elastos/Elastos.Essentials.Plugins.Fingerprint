@@ -119,7 +119,7 @@ class FingerprintPlugin : TrinityPlugin {
             return
         }
         
-        let activeAuthHelper = FingerPrintAuthHelper(dAppID: getActiveDAppID())
+        let activeAuthHelper = FingerPrintAuthHelper(did: did, dAppID: getActiveDAppID())
         activeAuthHelper.authenticateAndSavePassword(passwordKey: passwordKey, password: password) {
             err in
             
@@ -146,7 +146,7 @@ class FingerprintPlugin : TrinityPlugin {
             return
         }
         
-        let activeAuthHelper = FingerPrintAuthHelper(dAppID: getActiveDAppID())
+        let activeAuthHelper = FingerPrintAuthHelper(did: did, dAppID: getActiveDAppID())
         activeAuthHelper.authenticateAndGetPassword(passwordKey: passwordKey) {
             password, err in
             
@@ -176,7 +176,7 @@ class FingerprintPlugin : TrinityPlugin {
             return
         }
         
-        let activeAuthHelper = FingerPrintAuthHelper(dAppID: getActiveDAppID())
+        let activeAuthHelper = FingerPrintAuthHelper(did: did, dAppID: getActiveDAppID())
         activeAuthHelper.authenticate() {
             err in
             

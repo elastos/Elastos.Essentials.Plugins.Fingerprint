@@ -26,15 +26,26 @@ import LocalAuthentication
 public typealias AuthenticationCallback = (FingerprintPluginError?) -> Void
 
 public class FingerPrintAuthHelper {
+    private static let DID_APPLICATION_APP_ID = "org.elastos.trinity.dapp.did"
+    private static let DID_SESSION_APPLICATION_APP_ID = "org.elastos.trinity.dapp.didsession"
     private static let FINGER_PRINT_HELPER = "FingerPrintAuthHelper"
     private static let KEYCHAIN_PASS_KEY = "KEYCHAIN_PASS_KEY"
     private static let KEYSTORE_APP_ALIAS = "Trinity"
     private static let TAG = "FingerPrintAuthHelper"
     
+    private let did: String
     private let dAppID: String // Package id of the Trinity DApp calling us
     
-    init(dAppID: String) {
-        self.dAppID = dAppID
+    init(did: String, dAppID: String) {
+        self.did = did
+        
+        // Special case for did session and did apps: the did session app uses the did app package id, so they can share their data
+        if dAppID == FingerPrintAuthHelper.DID_SESSION_APPLICATION_APP_ID {
+            self.dAppID = FingerPrintAuthHelper.DID_APPLICATION_APP_ID
+        }
+        else {
+            self.dAppID = dAppID
+        }
     }
     
     public enum BiometryState {
@@ -82,7 +93,7 @@ public class FingerPrintAuthHelper {
     }
     
     private func getPasswordKeychainStorageKey(passwordKey: String) -> String {
-        return FingerPrintAuthHelper.KEYCHAIN_PASS_KEY + dAppID + passwordKey
+        return FingerPrintAuthHelper.KEYCHAIN_PASS_KEY + did + dAppID + passwordKey
     }
     
     private func getBioSecAccessControl() -> SecAccessControl {
