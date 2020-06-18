@@ -32,13 +32,13 @@ public class FingerPrintAuthHelper {
     private static let KEYCHAIN_PASS_KEY = "KEYCHAIN_PASS_KEY"
     private static let KEYSTORE_APP_ALIAS = "Trinity"
     private static let TAG = "FingerPrintAuthHelper"
-    
+
     private let did: String
     private let dAppID: String // Package id of the Trinity DApp calling us
-    
+
     init(did: String, dAppID: String) {
         self.did = did
-        
+
         // Special case for did session and did apps: the did session app uses the did app package id, so they can share their data
         if dAppID == FingerPrintAuthHelper.DID_SESSION_APPLICATION_APP_ID {
             self.dAppID = FingerPrintAuthHelper.DID_APPLICATION_APP_ID
@@ -47,25 +47,25 @@ public class FingerPrintAuthHelper {
             self.dAppID = dAppID
         }
     }
-    
+
     public enum BiometryState {
         case available, locked, notAvailable
     }
-    
+
     /**
      * Current state of the biometric sensors
      */
     public var biometryState: BiometryState {
         let authContext = LAContext()
         var error: NSError?
-        
+
         let biometryAvailable = authContext.canEvaluatePolicy(
             LAPolicy.deviceOwnerAuthenticationWithBiometrics, error: &error)
-        
+
         if let laError = error as? LAError, laError.code == LAError.Code.biometryLockout {
             return .locked
         }
-        
+
         return biometryAvailable ? .available : .notAvailable
     }
 
@@ -78,10 +78,10 @@ public class FingerPrintAuthHelper {
             kSecAttrAccount as String : key,
             kSecAttrAccessControl as String: getBioSecAccessControl(),
             kSecValueData as String   : data ] as CFDictionary
-        
+
         return SecItemAdd(query as CFDictionary, nil)
     }
-    
+
     /**
      * Saves a password to keychain, for a given password key.
      * Password keys are user defined keys, simply used to be able to store multiple passwords for a same dApp.
@@ -91,15 +91,15 @@ public class FingerPrintAuthHelper {
         let data = password.data(using: .utf8)!
         _ = createBioProtectedEntry(key: getPasswordKeychainStorageKey(passwordKey: passwordKey), data: data)
     }
-    
+
     private func getPasswordKeychainStorageKey(passwordKey: String) -> String {
         return FingerPrintAuthHelper.KEYCHAIN_PASS_KEY + did + dAppID + passwordKey
     }
-    
+
     private func getBioSecAccessControl() -> SecAccessControl {
         var access: SecAccessControl?
         var error: Unmanaged<CFError>?
-        
+
         if #available(iOS 11.3, *) {
             access = SecAccessControlCreateWithFlags(nil,
                                                      kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
@@ -114,7 +114,7 @@ public class FingerPrintAuthHelper {
         precondition(access != nil, "SecAccessControlCreateWithFlags failed")
         return access!
     }
-    
+
     /**
      * Reads a saved password entry from keychain, configuring the biometry protection requirement
      * (can't read without biometry auth completed)
@@ -126,24 +126,24 @@ public class FingerPrintAuthHelper {
             kSecReturnData as String  : kCFBooleanTrue,
             kSecAttrAccessControl as String: getBioSecAccessControl(),
             kSecMatchLimit as String  : kSecMatchLimitOne ]
-        
+
         if let context = context {
             query[kSecUseAuthenticationContext as String] = context
-            
+
             // Prevent system UI from automatically requesting Touch ID/Face ID authentication
             // just in case someone passes here an LAContext instance without
             // a prior evaluateAccessControl call
             query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUISkip
         }
-        
+
         if let prompt = prompt {
             query[kSecUseOperationPrompt as String] = prompt
         }
-        
+
         var dataTypeRef: AnyObject? = nil
-        
+
         let status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
-        
+
         if status == noErr {
             return (dataTypeRef! as! Data)
         } else {
@@ -153,27 +153,29 @@ public class FingerPrintAuthHelper {
             return nil
         }
     }
-    
+
     private func getSavedPassword(passwordKey: String, context: LAContext) -> String? {
         if let data = loadBioProtected(key: getPasswordKeychainStorageKey(passwordKey: passwordKey), context: context) {
             return String(data: data, encoding: .utf8)
         }
-        
+
         return nil
     }
-    
+
     private func checkBiometryState(_ completion: @escaping (Bool)->Void) {
         let bioState = self.biometryState
         guard bioState != .notAvailable else {
             // Can't read entry, biometry not available
-            completion(false)
+            DispatchQueue.main.async {
+                completion(false)
+            }
             return
         }
         if bioState == .locked {
             // To unlock biometric authentication iOS requires user to enter a valid passcode
             let authContext = LAContext()
             authContext.evaluatePolicy(LAPolicy.deviceOwnerAuthentication, localizedReason: "Access sample keychain entry", reply: { (success, error) in
-                
+
                 DispatchQueue.main.async {
                     if success {
                         completion(true)
@@ -184,10 +186,12 @@ public class FingerPrintAuthHelper {
                 }
             })
         } else {
-            completion(true)
+            DispatchQueue.main.async {
+                completion(true)
+            }
         }
     }
-    
+
     private func laErrorToFingerprintPluginError(_ laError: LAError) -> FingerprintPluginError {
         switch laError {
         case LAError.authenticationFailed:
@@ -206,56 +210,55 @@ public class FingerPrintAuthHelper {
             return .BIOMETRIC_AUTHENTICATION_FAILED
         }
     }
-    
+
     private func _authenticate(_ completion: @escaping (FingerprintPluginError?, LAContext)->Void) {
         let context = LAContext()
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: "Authenticate") { (success, evaluateError) in
-            
-            if success {
-                DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                if success {
                     completion(nil, context)
+                } else {
+                    completion(self.laErrorToFingerprintPluginError(evaluateError as! LAError), context)
                 }
-            } else {
-                completion(self.laErrorToFingerprintPluginError(evaluateError as! LAError), context)
             }
         }
     }
-    
+
     func authenticateAndSavePassword(passwordKey: String, password: String, callback: @escaping (FingerprintPluginError?)->Void) {
-        
+
         _authenticate { err, context in
             guard err == nil else {
                 callback(err)
                 return
             }
-            
+
             // Biometry auth was completed and successful
             self.savePassword(passwordKey: passwordKey, password: password)
-            
+
             callback(nil)
         }
     }
-    
+
     func authenticateAndGetPassword(passwordKey: String, callback: @escaping (String?, FingerprintPluginError?)->Void) {
-        
+
         _authenticate { err, context in
             guard err == nil else {
                 callback(nil, err)
                 return
             }
-            
+
             // Biometry auth was completed and successful
             callback(self.getSavedPassword(passwordKey: passwordKey, context: context), nil)
         }
     }
-    
+
     func authenticate(callback: @escaping (FingerprintPluginError?)->Void) {
         _authenticate { err, context in
             guard err == nil else {
                 callback(err)
                 return
             }
-            
+
             // Biometry auth was completed and successful
             callback(nil)
         }
