@@ -57,12 +57,9 @@ public class FingerPrintAuthHelper {
     private static final String LAST_USED_IV_SHARED_PREF_KEY = "LAST_USED_IV_SHARED_PREFS_KEY";
     private static final String KEYSTORE_APP_ALIAS = "Trinity";
     private static final String TAG = "FingerPrintAuthHelper";
-    private static final String DID_APPLICATION_APP_ID = "org.elastos.trinity.dapp.did";
-    private static final String DID_SESSION_APPLICATION_APP_ID = "org.elastos.trinity.dapp.didsession";
 
     private final Activity activity;
     private final String did; // Signed in DID string
-    private final String dAppID; // Package id of the Trinity DApp calling us
     private KeyStore keyStore;
     private AuthenticateActivityInfoHolder activityInfoHolder;
 
@@ -89,15 +86,10 @@ public class FingerPrintAuthHelper {
         void onSuccess(String password);
     }
 
+    // TODO remove did
     public FingerPrintAuthHelper(Activity activity, String did, String dAppID) {
         this.activity = activity;
         this.did = did;
-
-        // Special case for did session and did apps: the did session app uses the did app package id, so they can share their data
-        if (dAppID.equals(DID_SESSION_APPLICATION_APP_ID))
-            this.dAppID = DID_APPLICATION_APP_ID;
-        else
-            this.dAppID = dAppID;
     }
 
     public String getLastError() {
@@ -127,7 +119,7 @@ public class FingerPrintAuthHelper {
         if (!initKeyStore()) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -236,7 +228,8 @@ public class FingerPrintAuthHelper {
     }
 
     private SharedPreferences getSharedPreferences() {
-        return activity.getSharedPreferences(FINGER_PRINT_HELPER+"_"+did+"_"+dAppID, 0);
+        // TODO replace did with context?
+        return activity.getSharedPreferences(FINGER_PRINT_HELPER+"_"+did, 0);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)

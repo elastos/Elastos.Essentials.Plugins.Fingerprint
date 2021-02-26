@@ -1,1 +1,1 @@
-# Elastos.Trinity.Plugins.Fingerprint
+# Elastos.Essentials.Plugins.Fingerprint

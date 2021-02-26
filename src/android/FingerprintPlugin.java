@@ -11,16 +11,16 @@ import androidx.biometric.BiometricManager;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
-import org.elastos.trinity.runtime.TrinityPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import static android.content.Context.FINGERPRINT_SERVICE;
 
-public class FingerprintPlugin extends TrinityPlugin {
+public class FingerprintPlugin extends CordovaPlugin {
     private static final String TAG = "FingerprintPlugin";
     private CallbackContext mCallbackContext = null;
 
@@ -89,7 +89,7 @@ public class FingerprintPlugin extends TrinityPlugin {
         });
 
         cordova.getActivity().runOnUiThread(() -> {
-            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), did, getActiveDAppID());
+            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), "", getActiveDAppID());
             activeAuthHelper.init();
             activeAuthHelper.authenticateAndSavePassword(passwordKey, password, cancellationSignal, new FingerPrintAuthHelper.SimpleAuthenticationCallback() {
                 @Override
@@ -130,7 +130,8 @@ public class FingerprintPlugin extends TrinityPlugin {
         }
 
         cordova.getActivity().runOnUiThread(() -> {
-            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), did, getActiveDAppID());
+            // TODO remove did
+            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), "", getActiveDAppID());
             activeAuthHelper.init();
             activeAuthHelper.authenticateAndGetPassword(passwordKey, new CancellationSignal(), new FingerPrintAuthHelper.GetPasswordAuthenticationCallback() {
                 @Override
@@ -163,7 +164,8 @@ public class FingerprintPlugin extends TrinityPlugin {
             return;
         }
         cordova.getActivity().runOnUiThread(() -> {
-            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), did, getActiveDAppID());
+            // TODO remove did
+            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), "", getActiveDAppID());
             activeAuthHelper.init();
             activeAuthHelper.authenticate(new CancellationSignal(), new FingerPrintAuthHelper.SimpleAuthenticationCallback() {
                @Override
@@ -251,6 +253,7 @@ public class FingerprintPlugin extends TrinityPlugin {
      * App package ID of the currently active DApp calling this plugin.
      */
     private String getActiveDAppID() {
-        return appId;
+        // TODO remove this
+        return "";
     }
 }

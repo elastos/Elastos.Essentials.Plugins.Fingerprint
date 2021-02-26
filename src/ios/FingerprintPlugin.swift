@@ -25,77 +25,77 @@ import Foundation
 import LocalAuthentication
 
 @objc(FingerprintPlugin)
-class FingerprintPlugin : TrinityPlugin {
+class FingerprintPlugin : CDVPlugin {
     internal static let TAG = "FingerprintPlugin"
-    
+
     internal let keyCode        = "code"
     internal let keyMessage     = "message"
     internal let keyException   = "exception"
-    
+
     internal let errCodeInvalidArg                 = 10001
     internal let errCodeActionNotFound             = 10014
     internal let errCodeUnspecified                = 10015
     internal let errCodeException                  = 20001
-    
+
     // Model
-    
+
     // Methods
-    
+
     private func success(_ command: CDVInvokedUrlCommand) {
         let result = CDVPluginResult(status: CDVCommandStatus_OK);
 
         self.commandDelegate.send(result, callbackId: command.callbackId)
     }
-    
+
     private func success(_ command: CDVInvokedUrlCommand, retAsString: String) {
         let result = CDVPluginResult(status: CDVCommandStatus_OK,
                                      messageAs: retAsString);
 
         self.commandDelegate.send(result, callbackId: command.callbackId)
     }
-    
+
     private func error(_ command: CDVInvokedUrlCommand, retAsString: String) {
         self.error(command, code: errCodeUnspecified, msg: retAsString)
     }
-    
+
     private func error(_ command: CDVInvokedUrlCommand, code: Int, msg: String) {
        let errJson : NSMutableDictionary = [:]
        errJson.setValue(code, forKey: keyCode)
        errJson.setValue(msg, forKey: keyMessage)
-       
+
        self.log(message: "(" + command.methodName + ") - " + errJson.description)
-       
+
        let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: (errJson as! [AnyHashable : Any]))
        self.commandDelegate.send(result, callbackId: command.callbackId)
    }
-    
+
     private func error(_ command: CDVInvokedUrlCommand, _ e: FingerprintPluginError?) {
         self.error(command, code: e?.rawValue ?? -1, msg: "")
     }
-    
+
     private func exception(_ e: Error, _ command: CDVInvokedUrlCommand) {
         let msg = "(" + command.methodName + ") - " + e.localizedDescription
-        
+
         NSLog(msg)
-        
+
         self.error(command, code: errCodeException, msg: msg)
     }
 
     private func log(message: String) {
         NSLog(FingerprintPlugin.TAG+": "+message)
     }
-    
+
     private func sendWrongParametersCount(_ command: CDVInvokedUrlCommand, expected: Int) {
         self.error(command, code: errCodeInvalidArg, msg: "Wrong number of parameters passed. Expected \(expected).")
             return
     }
-    
+
     @objc func isBiometricAuthenticationMethodAvailable(_ command: CDVInvokedUrlCommand) {
         guard command.arguments.count == 0 else {
             self.sendWrongParametersCount(command, expected: 0)
             return
         }
-        
+
         let error = checkCanAuthenticate()
         if (error != nil) {
             success(command ,retAsString: "false")
@@ -103,26 +103,26 @@ class FingerprintPlugin : TrinityPlugin {
             success(command ,retAsString: "true")
         }
     }
-    
+
     @objc func authenticateAndSavePassword(_ command: CDVInvokedUrlCommand) {
         guard command.arguments.count == 2 else {
             self.sendWrongParametersCount(command, expected: 2)
             return
         }
-        
+
         let passwordKey = command.arguments[0] as! String
         let password = command.arguments[1] as! String
-        
+
         let canAuthenticate = checkCanAuthenticate()
         if (canAuthenticate != nil) {
             error(command, canAuthenticate)
             return
         }
-        
-        let activeAuthHelper = FingerPrintAuthHelper(did: did, dAppID: getActiveDAppID())
+        // TODO remove did
+        let activeAuthHelper = FingerPrintAuthHelper(did: "", dAppID: getActiveDAppID())
         activeAuthHelper.authenticateAndSavePassword(passwordKey: passwordKey, password: password) {
             err in
-            
+
             if let err = err {
                 self.error(command, err)
             }
@@ -131,25 +131,25 @@ class FingerprintPlugin : TrinityPlugin {
             }
         }
     }
-    
+
     @objc func authenticateAndGetPassword(_ command: CDVInvokedUrlCommand) {
         guard command.arguments.count == 1 else {
             self.sendWrongParametersCount(command, expected: 1)
             return
         }
-        
+
         let passwordKey = command.arguments[0] as! String
-        
+
         let canAuthenticate = checkCanAuthenticate()
         if (canAuthenticate != nil) {
             error(command, canAuthenticate)
             return
         }
-        
-        let activeAuthHelper = FingerPrintAuthHelper(did: did, dAppID: getActiveDAppID())
+        // TODO remove did
+        let activeAuthHelper = FingerPrintAuthHelper(did: "", dAppID: getActiveDAppID())
         activeAuthHelper.authenticateAndGetPassword(passwordKey: passwordKey) {
             password, err in
-            
+
             if let err = err {
                 self.error(command, err)
             }
@@ -163,23 +163,23 @@ class FingerprintPlugin : TrinityPlugin {
             }
         }
     }
-    
+
     @objc func authenticate(_ command: CDVInvokedUrlCommand) {
         guard command.arguments.count == 0 else {
             self.sendWrongParametersCount(command, expected: 0)
             return
         }
-                
+
         let canAuthenticate = checkCanAuthenticate()
         if (canAuthenticate != nil) {
             error(command, canAuthenticate)
             return
         }
-        
-        let activeAuthHelper = FingerPrintAuthHelper(did: did, dAppID: getActiveDAppID())
+        // TODO remove did
+        let activeAuthHelper = FingerPrintAuthHelper(did: "", dAppID: getActiveDAppID())
         activeAuthHelper.authenticate() {
             err in
-            
+
             if let err = err {
                 self.error(command, err)
             }
@@ -188,7 +188,7 @@ class FingerprintPlugin : TrinityPlugin {
             }
         }
     }
-    
+
     private func checkCanAuthenticate() -> FingerprintPluginError? {
         let context = LAContext()
         var error: NSError?
@@ -203,18 +203,19 @@ class FingerprintPlugin : TrinityPlugin {
             return .BIOMETRIC_HARDWARE_NOT_SUPPORTED
         }
     }
-    
+
     /**
      * App package ID of the currently active DApp calling this plugin.
      */
     private func getActiveDAppID() -> String {
-        return appId
+        // TODO remove this
+        return ""
     }
 }
 
 public enum FingerprintPluginError: Int {
     public typealias RawValue = Int
-    
+
     // Biometric errors
     case BIOMETRIC_AUTHENTICATION_FAILED = -102
     case BIOMETRIC_HARDWARE_NOT_SUPPORTED = -104
@@ -224,7 +225,7 @@ public enum FingerprintPluginError: Int {
     case BIOMETRIC_SCREEN_GUARD_UNSECURED = -110
     case BIOMETRIC_LOCKED_OUT = -111
     case BIOMETRIC_LOCKED_OUT_PERMANENT = -112
-    
+
     // Generic errors
     case INVALID_PARAMETERS_COUNT = -2
     case NO_PASSWORD_INFO = -3
