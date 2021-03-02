@@ -28,7 +28,7 @@
   <platform name="android">
     <config-file target="res/xml/config.xml" parent="/*">
       <feature name="FingerprintPlugin">
-        <param name="android-package" value="org.elastos.trinity.plugins.fingerprint.FingerprintPlugin"/>
+        <param name="android-package" value="org.elastos.essentials.plugins.fingerprint.FingerprintPlugin"/>
       </feature>
     </config-file>
 
@@ -38,9 +38,9 @@
     </config-file>
 
     <framework src="src/android/build.gradle" custom="true" type="gradleReference"/>
-    <source-file src="src/android/FingerprintPlugin.java" target-dir="src/org/elastos/trinity/plugins/fingerprint"/>
-    <source-file src="src/android/FingerPrintAuthHelper.java" target-dir="src/org/elastos/trinity/plugins/fingerprint"/>
-    <source-file src="src/android/PluginError.java" target-dir="src/org/elastos/trinity/plugins/fingerprint"/>
+    <source-file src="src/android/FingerprintPlugin.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
+    <source-file src="src/android/FingerPrintAuthHelper.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
+    <source-file src="src/android/PluginError.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
   </platform>
 
   <engines>

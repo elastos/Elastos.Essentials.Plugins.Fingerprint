@@ -1,4 +1,4 @@
-package org.elastos.trinity.plugins.fingerprint;
+package org.elastos.essentials.plugins.fingerprint;
 
 import android.annotation.TargetApi;
 import android.content.Intent;
