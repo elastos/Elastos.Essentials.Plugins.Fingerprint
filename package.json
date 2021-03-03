@@ -1,9 +1,9 @@
 {
-    "name": "elastos-essentials-plugins-fingerprint",
+    "name": "elastos-essentials-plugin-fingerprint",
     "version": "1.0.0",
     "description": "Elastos Essentials Fingerprint Plugin",
     "cordova": {
-      "id": "elastos-essentials-plugins-fingerprint",
+      "id": "elastos-essentials-plugin-fingerprint",
       "platforms": [
         "android",
         "ios"
