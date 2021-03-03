@@ -32,5 +32,6 @@
     "homepage": "https://github.com/elastos/Elastos.Essentials.Plugins.Fingerprint#readme",
     "scripts": {
       "gen-docs": "jsdoc2md www/fingerprint.js > README.md"
-    }
+    },
+    "types": "./www/types.d.ts"
   }
