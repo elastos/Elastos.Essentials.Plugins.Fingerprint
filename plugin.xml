@@ -33,11 +33,22 @@
     </config-file>
 
     <config-file target="AndroidManifest.xml" parent="/*">
-	    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+	  <uses-permission android:name="android.permission.USE_BIOMETRIC" />
       <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
     </config-file>
 
+    <config-file target="AndroidManifest.xml" parent="application">
+      <activity android:name="org.elastos.essentials.plugins.fingerprint.BiometricActivity" android:theme="@style/TransparentTheme" android:exported="true"/>
+    </config-file>
+
     <framework src="src/android/build.gradle" custom="true" type="gradleReference"/>
+    <resource-file src="src/android/res/biometric_activity.xml" target="res/layout/biometric_activity.xml"/>
+    <resource-file src="src/android/res/styles.xml" target="res/values/biometric-styles.xml"/>
+    <source-file src="src/android/Args.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
+    <source-file src="src/android/BiometricActivity.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
+    <source-file src="src/android/BiometricActivityType.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
+    <source-file src="src/android/CryptoException.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
+    <source-file src="src/android/PromptInfo.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
     <source-file src="src/android/FingerprintPlugin.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
     <source-file src="src/android/FingerPrintAuthHelper.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>
     <source-file src="src/android/PluginError.java" target-dir="src/org/elastos/essentials/plugins/fingerprint"/>

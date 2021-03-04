@@ -1,12 +1,14 @@
 package org.elastos.essentials.plugins.fingerprint;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Intent;
-import android.hardware.fingerprint.FingerprintManager;
 import android.os.Build;
-import android.os.CancellationSignal;
+import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.biometric.BiometricManager;
 
 import org.apache.cordova.CallbackContext;
@@ -18,12 +20,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import static android.content.Context.FINGERPRINT_SERVICE;
 
 public class FingerprintPlugin extends CordovaPlugin {
     private static final String TAG = "FingerprintPlugin";
+    private static final int REQUEST_CODE_BIOMETRIC = 1;
     private CallbackContext mCallbackContext = null;
 
+    private static String did = "";
     private static FingerPrintAuthHelper activeAuthHelper = null;
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -80,33 +83,10 @@ public class FingerprintPlugin extends CordovaPlugin {
             return;
         }
 
-        CancellationSignal cancellationSignal = new CancellationSignal();
-        cancellationSignal.setOnCancelListener(new CancellationSignal.OnCancelListener() {
-            @Override
-            public void onCancel() {
-                System.out.println("CANCELLED");
-            }
-        });
-
         cordova.getActivity().runOnUiThread(() -> {
-            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), "", getActiveDAppID());
+            activeAuthHelper = new FingerPrintAuthHelper(this, did);
             activeAuthHelper.init();
-            activeAuthHelper.authenticateAndSavePassword(passwordKey, password, cancellationSignal, new FingerPrintAuthHelper.SimpleAuthenticationCallback() {
-                @Override
-                public void onSuccess() {
-                    sendSuccess(null);
-                }
-
-                @Override
-                public void onFailure(String message) {
-                    sendError(-1, message);
-                }
-
-                @Override
-                public void onHelp(int helpCode, String helpString) {
-                    displayNotImplemented("ON HELP - "+helpString);
-                }
-            });
+            activeAuthHelper.authenticateAndSavePassword(passwordKey, password, mAuthenticationCallback);
         });
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
         pluginResult.setKeepCallback(true);
@@ -130,26 +110,9 @@ public class FingerprintPlugin extends CordovaPlugin {
         }
 
         cordova.getActivity().runOnUiThread(() -> {
-            // TODO remove did
-            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), "", getActiveDAppID());
+            activeAuthHelper = new FingerPrintAuthHelper(this, did);
             activeAuthHelper.init();
-            activeAuthHelper.authenticateAndGetPassword(passwordKey, new CancellationSignal(), new FingerPrintAuthHelper.GetPasswordAuthenticationCallback() {
-                @Override
-                public void onSuccess(String password) {
-                    // User authenticated and the previously saved password was decrypted
-                    sendSuccess(password);
-                }
-
-                @Override
-                public void onFailure(String message) {
-                    sendError(-1, message);
-                }
-
-                @Override
-                public void onHelp(int helpCode, String helpString) {
-                    displayNotImplemented("ON HELP - "+helpString);
-                }
-            });
+            activeAuthHelper.authenticateAndGetPassword(passwordKey, mAuthenticationCallback);
         });
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
         pluginResult.setKeepCallback(true);
@@ -158,35 +121,42 @@ public class FingerprintPlugin extends CordovaPlugin {
 
     @TargetApi(Build.VERSION_CODES.M)
     private void executeAuthenticate(JSONArray args) {
-        PluginError error = checkCanAuthenticate();
-        if (error != null) {
-            sendError(error);
+         PluginError error = checkCanAuthenticate();
+         if (error != null) {
+             sendError(error);
+             return;
+         }
+         cordova.getActivity().runOnUiThread(() -> {
+             activeAuthHelper = new FingerPrintAuthHelper(this, did);
+             activeAuthHelper.init();
+             activeAuthHelper.authenticate(mAuthenticationCallback);
+         });
+         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+         pluginResult.setKeepCallback(true);
+         this.mCallbackContext.sendPluginResult(pluginResult);
+    }
+
+    private FingerPrintAuthHelper.AuthenticationCallback mAuthenticationCallback =
+    new FingerPrintAuthHelper.AuthenticationCallback() {
+
+        @Override
+        public void onFailure(String message) {
+            sendError(-1, message);
+        }
+
+        @Override
+        public void onSuccess(String password) {
+            sendSuccess(password);
+        }
+    };
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        if (requestCode != REQUEST_CODE_BIOMETRIC) {
             return;
         }
-        cordova.getActivity().runOnUiThread(() -> {
-            // TODO remove did
-            activeAuthHelper = new FingerPrintAuthHelper(cordova.getActivity(), "", getActiveDAppID());
-            activeAuthHelper.init();
-            activeAuthHelper.authenticate(new CancellationSignal(), new FingerPrintAuthHelper.SimpleAuthenticationCallback() {
-               @Override
-               public void onSuccess() {
-                   sendSuccess(null);
-               }
-
-               @Override
-               public void onFailure(String message) {
-                   sendError(-1, message);
-               }
-
-               @Override
-               public void onHelp(int helpCode, String helpString) {
-                   displayNotImplemented("ON HELP - "+helpString);
-               }
-           });
-        });
-        PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
-        pluginResult.setKeepCallback(true);
-        this.mCallbackContext.sendPluginResult(pluginResult);
+        activeAuthHelper.setActivityResult(requestCode, resultCode, intent);
     }
 
     private PluginError checkCanAuthenticate() {
@@ -236,24 +206,5 @@ public class FingerprintPlugin extends CordovaPlugin {
             else
                 this.mCallbackContext.success();
         });
-    }
-
-    /**
-     * Reference to a static global auth helper used by the authentication activity for convenience.
-     */
-    static FingerPrintAuthHelper getActiveAuthHelper() {
-        return activeAuthHelper;
-    }
-
-    private void displayNotImplemented(String message) {
-        Log.d(TAG, "NOT YET IMPLEMENTED - "+message);
-    }
-
-    /**
-     * App package ID of the currently active DApp calling this plugin.
-     */
-    private String getActiveDAppID() {
-        // TODO remove this
-        return "";
     }
 }
