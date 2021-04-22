@@ -138,7 +138,7 @@ public class FingerPrintAuthHelper {
             return (dataTypeRef! as! Data)
         } else {
             if #available(iOS 11.3, *) {
-                Log.w(FingerPrintAuthHelper.TAG, "Failed to load biometric password with error: \(SecCopyErrorMessageString(status, nil) as String?)")
+                NSLog(FingerPrintAuthHelper.TAG, "Failed to load biometric password with error: \(SecCopyErrorMessageString(status, nil) as String?)")
             }
             return nil
         }
