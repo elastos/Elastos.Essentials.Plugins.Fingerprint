@@ -28,13 +28,11 @@ public typealias AuthenticationCallback = (FingerprintPluginError?) -> Void
 public class FingerPrintAuthHelper {
     private static let FINGER_PRINT_HELPER = "FingerPrintAuthHelper"
     private static let KEYCHAIN_PASS_KEY = "KEYCHAIN_PASS_KEY"
-    private static let KEYSTORE_APP_ALIAS = "Trinity"
     private static let TAG = "FingerPrintAuthHelper"
 
     private let did: String
 
-    // TODO remove did and dAppID
-    init(did: String, dAppID: String) {
+    init(did: String) {
         self.did = did
     }
 

@@ -118,8 +118,8 @@ class FingerprintPlugin : CDVPlugin {
             error(command, canAuthenticate)
             return
         }
-        // TODO remove did
-        let activeAuthHelper = FingerPrintAuthHelper(did: "", dAppID: getActiveDAppID())
+
+        let activeAuthHelper = FingerPrintAuthHelper(did: "")
         activeAuthHelper.authenticateAndSavePassword(passwordKey: passwordKey, password: password) {
             err in
 
@@ -145,8 +145,8 @@ class FingerprintPlugin : CDVPlugin {
             error(command, canAuthenticate)
             return
         }
-        // TODO remove did
-        let activeAuthHelper = FingerPrintAuthHelper(did: "", dAppID: getActiveDAppID())
+
+        let activeAuthHelper = FingerPrintAuthHelper(did: "")
         activeAuthHelper.authenticateAndGetPassword(passwordKey: passwordKey) {
             password, err in
 
@@ -175,8 +175,8 @@ class FingerprintPlugin : CDVPlugin {
             error(command, canAuthenticate)
             return
         }
-        // TODO remove did
-        let activeAuthHelper = FingerPrintAuthHelper(did: "", dAppID: getActiveDAppID())
+
+        let activeAuthHelper = FingerPrintAuthHelper(did: "")
         activeAuthHelper.authenticate() {
             err in
 
@@ -198,18 +198,10 @@ class FingerprintPlugin : CDVPlugin {
             return nil
         }
         else {
-           //TODO if let laError = error as? LAError, laError.code == LAError.Code.biometryLockout {
+            //TODO if let laError = error as? LAError, laError.code == LAError.Code.biometryLockout {
 
             return .BIOMETRIC_HARDWARE_NOT_SUPPORTED
         }
-    }
-
-    /**
-     * App package ID of the currently active DApp calling this plugin.
-     */
-    private func getActiveDAppID() -> String {
-        // TODO remove this
-        return ""
     }
 }
 
