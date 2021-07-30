@@ -60,33 +60,51 @@ public class FingerPrintAuthHelper {
     /**
      * Creates a keychain entry accessible only after a biometry check
      */
-    func createBioProtectedEntry(key: String, data: Data) -> OSStatus {
-        let query = [
-            kSecClass as String       : kSecClassGenericPassword as String,
-            kSecAttrAccount as String : key,
-            kSecAttrAccessControl as String: getBioSecAccessControl(),
-            kSecValueData as String   : data ] as CFDictionary
+    func createBioProtectedEntry(key: String, data: Data, context: LAContext? = nil) -> OSStatus {
+        let addOrDeleteQuery: [String: Any] = [
+                    kSecClass as String       : kSecClassGenericPassword as String,
+                    kSecAttrAccount as String : key,
+                    kSecAttrAccessControl as String: getBioSecAccessControl(),
+                    kSecValueData as String   : data ]
 
-        var dataTypeRef: AnyObject? = nil
-        let status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
-        if status == noErr {
-            let updatedItems = [
-                kSecValueData: data,
-            ] as CFDictionary;
-            return SecItemUpdate(query, updatedItems )
-        } else {
-            return SecItemAdd(query as CFDictionary, nil)
+        // Can not use kSecUseAuthenticationContext and kSecUseAuthenticationUI in the query for SecItemAdd.
+        var searchQuery: [String: Any] = [
+                    kSecClass as String       : kSecClassGenericPassword as String,
+                    kSecAttrAccount as String : key,
+                    kSecAttrAccessControl as String: getBioSecAccessControl()]
+        if let context = context {
+            searchQuery[kSecUseAuthenticationContext as String] = context
+
+            // Prevent system UI from automatically requesting Touch ID/Face ID authentication
+            // just in case someone passes here an LAContext instance without
+            // a prior evaluateAccessControl call
+            searchQuery[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUISkip
         }
+
+        var status = SecItemCopyMatching(searchQuery as CFDictionary, nil)
+        if status == noErr {
+            //TODO: User needs to re-authenticate if use SecItemUpdate, then the dialog will show twice.
+            status = SecItemDelete(addOrDeleteQuery as CFDictionary)
+        }
+
+        status = SecItemAdd(addOrDeleteQuery as CFDictionary, nil)
+        if status != noErr {
+            if #available(iOS 11.3, *) {
+                NSLog(FingerPrintAuthHelper.TAG, "Failed to add biometric password with error: \(SecCopyErrorMessageString(status, nil) as String?)")
+                return status
+            }
+        }
+        return status
     }
 
     /**
      * Saves a password to keychain, for a given password key.
      * Password keys are user defined keys, simply used to be able to store multiple passwords for a same dApp.
      */
-    private func savePassword(passwordKey: String, password: String) {
+    private func savePassword(passwordKey: String, password: String, context: LAContext? = nil) {
         // Sandbox dApps by storing passwords using the dApp package id as prefix.
         let data = password.data(using: .utf8)!
-        _ = createBioProtectedEntry(key: getPasswordKeychainStorageKey(passwordKey: passwordKey), data: data)
+        _ = createBioProtectedEntry(key: getPasswordKeychainStorageKey(passwordKey: passwordKey), data: data, context: context)
     }
 
     private func getPasswordKeychainStorageKey(passwordKey: String) -> String {
@@ -230,7 +248,7 @@ public class FingerPrintAuthHelper {
             }
 
             // Biometry auth was completed and successful
-            self.savePassword(passwordKey: passwordKey, password: password)
+            self.savePassword(passwordKey: passwordKey, password: password, context: context)
 
             callback(nil)
         }
