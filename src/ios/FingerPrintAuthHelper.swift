@@ -67,7 +67,16 @@ public class FingerPrintAuthHelper {
             kSecAttrAccessControl as String: getBioSecAccessControl(),
             kSecValueData as String   : data ] as CFDictionary
 
-        return SecItemAdd(query as CFDictionary, nil)
+        var dataTypeRef: AnyObject? = nil
+        let status = SecItemCopyMatching(query as CFDictionary, &dataTypeRef)
+        if status == noErr {
+            let updatedItems = [
+                kSecValueData: data,
+            ] as CFDictionary;
+            return SecItemUpdate(query, updatedItems )
+        } else {
+            return SecItemAdd(query as CFDictionary, nil)
+        }
     }
 
     /**
@@ -111,7 +120,7 @@ public class FingerPrintAuthHelper {
         var query: [String: Any] = [
             kSecClass as String       : kSecClassGenericPassword,
             kSecAttrAccount as String : key,
-            kSecReturnData as String  : kCFBooleanTrue,
+            kSecReturnData as String  : kCFBooleanTrue as Any,
             kSecAttrAccessControl as String: getBioSecAccessControl(),
             kSecMatchLimit as String  : kSecMatchLimitOne ]
 
