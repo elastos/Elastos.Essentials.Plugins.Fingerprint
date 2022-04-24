@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
 import android.util.Log;
 
@@ -29,6 +30,7 @@ import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
 import java.util.concurrent.Executor;
@@ -134,21 +136,25 @@ public class BiometricActivity extends AppCompatActivity {
     private boolean initKeyStore() {
         try {
             keyStore = KeyStore.getInstance("AndroidKeyStore");
-            KeyGenerator keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
             keyStore.load(null);
 
             // Generate a permanent keypair in case we don't have one yet
             if (!keyStore.containsAlias(KEYSTORE_APP_ALIAS)) {
                 Log.d(TAG, "No alias found in keystore, creating a new keypair");
-                KeyGenParameterSpec keyGeneratorSpec = createKeyGenParameterSpec();
-                keyGenerator.init(keyGeneratorSpec);
-                keyGenerator.generateKey();
+                createKey();
             }
         } catch (Throwable t) {
             setError("Failed init of keyStore & keyGenerator: " + t.getMessage());
             return false;
         }
         return true;
+    }
+
+    private void createKey() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+        KeyGenerator keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
+        KeyGenParameterSpec keyGeneratorSpec = createKeyGenParameterSpec();
+        keyGenerator.init(keyGeneratorSpec);
+        keyGenerator.generateKey();
     }
 
     private String getPasswordSharedPrefsKey(String passwordKey) {
@@ -226,6 +232,16 @@ public class BiometricActivity extends AppCompatActivity {
                         .build();
 
                 mBiometricPrompt.authenticate(promptInfo, new BiometricPrompt.CryptoObject(cipher));
+            }
+        } catch (KeyPermanentlyInvalidatedException e) {
+            Log.e(TAG, "An error occurred: " + e.getMessage());
+            try {
+                keyStore.deleteEntry(KEYSTORE_APP_ALIAS);
+                createKey();
+//                authenticate(mode);
+                finishWithError(PluginError.BIOMETRIC_AUTHENTICATION_FAILED, "Key Permanently Invalidated");
+            } catch (Throwable t) {
+                Log.e(TAG, "An error occurred: " + t.getMessage());
             }
         } catch (Throwable t) {
 //            activityInfoHolder.listener.getCallback().onFailure("An error occurred: " + t.getMessage());
